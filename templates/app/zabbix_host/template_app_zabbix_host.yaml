@@ -1,0 +1,176 @@
+zabbix_export:
+  version: '6.0'
+  groups:
+    -
+      uuid: a571c0d144b14fd4a87a9d9b2aa9fcd6
+      name: Templates/Applications
+  templates:
+    -
+      uuid: cda9b3d8033a4f84b254bd2e20e8afac
+      template: 'Zabbix host items'
+      name: 'Zabbix host items'
+      description: 'This template is designed to monitor the number of unsupported and enabled items and their ratio.'
+      groups:
+        -
+          name: Templates/Applications
+      items:
+        -
+          uuid: 5a816b72df6944cba64a7f4bee915c1c
+          name: 'Zabbix host: Ratio of unsupported to enabled items, in %'
+          type: CALCULATED
+          key: zabbix.host.items.ratio
+          history: 1w
+          units: '%'
+          params: '100*last(//zabbix[host,,items_unsupported])/last(//zabbix[host,,items])'
+          description: 'The percentage of unsupported items relative to enabled items on the host.'
+          tags:
+            -
+              tag: component
+              value: system
+          triggers:
+            -
+              uuid: 1c36bd476d8046e8bd7dcc269833e791
+              expression: 'last(/Zabbix host items/zabbix.host.items.ratio)>={$ZABBIX.HOST.ITEMS_UNSUPPORTED.MIN.AVG}'
+              name: 'Zabbix host: More than {$ZABBIX.HOST.ITEMS_UNSUPPORTED.MIN.AVG}% of items are not supported'
+              priority: AVERAGE
+              description: 'The proportion of items in an unsupported state is equal to or greater than a certain percentage, used with {$ZABBIX.HOST.ITEMS_UNSUPPORTED.MIN.AVG} as percentage threshold.'
+              manual_close: 'YES'
+              dependencies:
+                -
+                  name: 'Zabbix host: More than {$ZABBIX.HOST.ITEMS_UNSUPPORTED.MIN.HIGH}% of items are not supported'
+                  expression: 'last(/Zabbix host items/zabbix.host.items.ratio)>={$ZABBIX.HOST.ITEMS_UNSUPPORTED.MIN.HIGH}'
+              tags:
+                -
+                  tag: scope
+                  value: performance
+            -
+              uuid: 84f4212b45bf4ae3915b09b511f14e1d
+              expression: 'last(/Zabbix host items/zabbix.host.items.ratio)>={$ZABBIX.HOST.ITEMS_UNSUPPORTED.MIN.HIGH}'
+              name: 'Zabbix host: More than {$ZABBIX.HOST.ITEMS_UNSUPPORTED.MIN.HIGH}% of items are not supported'
+              priority: HIGH
+              description: 'The proportion of items in an unsupported state is equal to or greater than a certain percentage, used with {$ZABBIX.HOST.ITEMS_UNSUPPORTED.MIN.HIGH} as percentage threshold.'
+              manual_close: 'YES'
+              tags:
+                -
+                  tag: scope
+                  value: performance
+        -
+          uuid: 3dcf8fbb35d94561b35a46065d4f8ddc
+          name: 'Zabbix host: Number of enabled items'
+          type: INTERNAL
+          key: 'zabbix[host,,items]'
+          history: 1w
+          description: 'The number of enabled items on the host (supported and not supported).'
+          tags:
+            -
+              tag: component
+              value: system
+        -
+          uuid: de0f57ad912641e4b13d9ed4a4c22926
+          name: 'Zabbix host: Number of unsupported items'
+          type: INTERNAL
+          key: 'zabbix[host,,items_unsupported]'
+          history: 1w
+          description: 'The number of unsupported items on the host.'
+          tags:
+            -
+              tag: component
+              value: system
+          triggers:
+            -
+              uuid: d7eebe061dfd48b2b01b8e53ef6cd87a
+              expression: 'last(/Zabbix host items/zabbix[host,,items_unsupported])>0'
+              name: 'Zabbix host: Unsupported items are present'
+              event_name: 'Zabbix host: Unsupported items are present ({ITEM.VALUE})'
+              priority: WARNING
+              description: 'At least one item is in an unsupported state.'
+              manual_close: 'YES'
+              dependencies:
+                -
+                  name: 'Zabbix host: More than {$ZABBIX.HOST.ITEMS_UNSUPPORTED.MIN.AVG}% of items are not supported'
+                  expression: 'last(/Zabbix host items/zabbix.host.items.ratio)>={$ZABBIX.HOST.ITEMS_UNSUPPORTED.MIN.AVG}'
+              tags:
+                -
+                  tag: scope
+                  value: performance
+      tags:
+        -
+          tag: class
+          value: software
+        -
+          tag: target
+          value: host
+        -
+          tag: target
+          value: zabbix
+      macros:
+        -
+          macro: '{$ZABBIX.HOST.ITEMS_UNSUPPORTED.MIN.AVG}'
+          value: '10'
+          description: 'Minimum percentage of unsupported items on the host for a trigger expression with average severity.'
+        -
+          macro: '{$ZABBIX.HOST.ITEMS_UNSUPPORTED.MIN.HIGH}'
+          value: '50'
+          description: 'Minimum percentage of unsupported items on the host for a trigger expression with high severity.'
+      dashboards:
+        -
+          uuid: 80d0b12d477e4794a04a1c39f977b147
+          name: 'Zabbix host items'
+          pages:
+            -
+              widgets:
+                -
+                  type: GRAPH_CLASSIC
+                  name: 'Zabbix host: Items'
+                  width: '12'
+                  height: '5'
+                  fields:
+                    -
+                      type: GRAPH
+                      name: graphid
+                      value:
+                        host: 'Zabbix host items'
+                        name: 'Zabbix host: Items'
+                -
+                  type: GRAPH_CLASSIC
+                  name: 'Zabbix host: Items ratio %'
+                  x: '12'
+                  width: '12'
+                  height: '5'
+                  fields:
+                    -
+                      type: GRAPH
+                      name: graphid
+                      value:
+                        host: 'Zabbix host items'
+                        name: 'Zabbix host: Items ratio %'
+  graphs:
+    -
+      uuid: 4fe0a169d9be4d96a3ca404f954c1c6a
+      name: 'Zabbix host: Items'
+      graph_items:
+        -
+          color: 1A7C11
+          calc_fnc: ALL
+          item:
+            host: 'Zabbix host items'
+            key: 'zabbix[host,,items]'
+        -
+          sortorder: '1'
+          color: FF0000
+          calc_fnc: ALL
+          item:
+            host: 'Zabbix host items'
+            key: 'zabbix[host,,items_unsupported]'
+    -
+      uuid: 705a84f67747461b874309b5b972a781
+      name: 'Zabbix host: Items ratio %'
+      ymin_type_1: FIXED
+      ymax_type_1: FIXED
+      graph_items:
+        -
+          color: '274482'
+          calc_fnc: ALL
+          item:
+            host: 'Zabbix host items'
+            key: zabbix.host.items.ratio
